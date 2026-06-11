@@ -1,23 +1,73 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Earth Digital Twin</title>
+<title>Earth Digital Twin Demo</title>
 
 <style>
-html, body {
-    margin: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: black;
+
+html,body{
+margin:0;
+width:100%;
+height:100%;
+overflow:hidden;
+background:#000;
+font-family:Arial,Helvetica,sans-serif;
 }
 
-canvas {
-    display: block;
+canvas{
+display:block;
 }
+
+#popup{
+
+position:absolute;
+
+display:none;
+
+background:rgba(0,0,0,.85);
+
+color:white;
+
+padding:12px;
+
+border-radius:10px;
+
+pointer-events:none;
+
+min-width:200px;
+
+z-index:1000;
+
+border:1px solid rgba(255,255,255,.2);
+
+backdrop-filter:blur(5px);
+
+}
+
+#title{
+
+position:absolute;
+
+top:15px;
+
+left:15px;
+
+color:white;
+
+z-index:1000;
+
+background:rgba(0,0,0,.5);
+
+padding:10px;
+
+border-radius:8px;
+
+}
+
 </style>
 
 <script type="importmap">
@@ -30,237 +80,698 @@ canvas {
 </script>
 
 </head>
+
 <body>
+
+<div id="title">
+Earth Digital Twin Demo
+</div>
+
+<div id="popup"></div>
 
 <script type="module">
 
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { OrbitControls }
+from 'three/addons/controls/OrbitControls.js';
 
-//////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 // SCENE
-//////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 
 const scene = new THREE.Scene();
 
-//////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 // CAMERA
-//////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 
-const camera = new THREE.PerspectiveCamera(
-    45,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    1000
+const camera =
+new THREE.PerspectiveCamera(
+45,
+window.innerWidth/window.innerHeight,
+0.1,
+5000
 );
 
-camera.position.z = 4;
+camera.position.set(
+0,
+0,
+4
+);
 
-//////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 // RENDERER
-//////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 
-const renderer = new THREE.WebGLRenderer({
-    antialias: true
+const renderer =
+new THREE.WebGLRenderer({
+antialias:true
 });
 
 renderer.setSize(
-    window.innerWidth,
-    window.innerHeight
+window.innerWidth,
+window.innerHeight
 );
 
 renderer.setPixelRatio(
-    Math.min(window.devicePixelRatio, 2)
+Math.min(window.devicePixelRatio,2)
 );
 
 document.body.appendChild(
-    renderer.domElement
+renderer.domElement
 );
 
-//////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 // CONTROLS
-//////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 
-const controls = new OrbitControls(
-    camera,
-    renderer.domElement
+const controls =
+new OrbitControls(
+camera,
+renderer.domElement
 );
 
 controls.enableDamping = true;
+controls.dampingFactor = .05;
 
-//////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 // LIGHTS
-//////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 
-const ambient = new THREE.AmbientLight(
-    0xffffff,
-    0.8
+const ambient =
+new THREE.AmbientLight(
+0xffffff,
+0.8
 );
 
 scene.add(ambient);
 
-const sun = new THREE.DirectionalLight(
-    0xffffff,
-    2
+const sunLight =
+new THREE.DirectionalLight(
+0xffffff,
+2
 );
 
-sun.position.set(5, 3, 5);
+scene.add(sunLight);
 
-scene.add(sun);
+/////////////////////////////////////////////////////////
+// SUN
+/////////////////////////////////////////////////////////
 
-//////////////////////////////////////////////////////////////
-// TEXTURE LOADER
-//////////////////////////////////////////////////////////////
+const sunMesh =
+new THREE.Mesh(
 
-const loader = new THREE.TextureLoader();
-
-const earthTexture = loader.load(
-    'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg'
-);
-
-const normalMap = loader.load(
-    'https://threejs.org/examples/textures/planets/earth_normal_2048.jpg'
-);
-
-const specularMap = loader.load(
-    'https://threejs.org/examples/textures/planets/earth_specular_2048.jpg'
-);
-
-//////////////////////////////////////////////////////////////
-// EARTH
-//////////////////////////////////////////////////////////////
-
-const earthGeometry =
 new THREE.SphereGeometry(
-    1,
-    128,
-    128
+0.25,
+32,
+32
+),
+
+new THREE.MeshBasicMaterial({
+color:0xffdd88
+})
+
 );
 
-const earthMaterial =
-new THREE.MeshPhongMaterial({
-    map: earthTexture,
-    normalMap: normalMap,
-    specularMap: specularMap,
-    shininess: 10
-});
+sunMesh.position.set(
+8,
+2,
+-8
+);
+
+scene.add(
+sunMesh
+);
+
+sunLight.position.copy(
+sunMesh.position
+);
+
+/////////////////////////////////////////////////////////
+// TEXTURES
+/////////////////////////////////////////////////////////
+
+const loader =
+new THREE.TextureLoader();
+
+const earthTexture =
+loader.load(
+'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg'
+);
+
+const cloudTexture =
+loader.load(
+'https://threejs.org/examples/textures/planets/earth_clouds_1024.png'
+);
+
+/////////////////////////////////////////////////////////
+// EARTH
+/////////////////////////////////////////////////////////
 
 const earth =
 new THREE.Mesh(
-    earthGeometry,
-    earthMaterial
-);
 
-scene.add(earth);
+new THREE.SphereGeometry(
+1,
+128,
+128
+),
 
-//////////////////////////////////////////////////////////////
-// CLOUDS
-//////////////////////////////////////////////////////////////
-
-const cloudTexture = loader.load(
-    'https://raw.githubusercontent.com/turban/webgl-earth/master/images/fair_clouds_4k.png'
-);
-
-const cloudMaterial =
 new THREE.MeshPhongMaterial({
-    map: cloudTexture,
-    transparent: true,
-    opacity: 0.8
-});
 
-const cloudSphere =
-new THREE.Mesh(
-    new THREE.SphereGeometry(
-        1.01,
-        128,
-        128
-    ),
-    cloudMaterial
+map:earthTexture
+
+})
+
 );
 
-scene.add(cloudSphere);
+scene.add(
+earth
+);
 
-//////////////////////////////////////////////////////////////
-// STARS
-//////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+// CLOUDS
+/////////////////////////////////////////////////////////
 
-const starsGeometry =
-new THREE.BufferGeometry();
+const clouds =
+new THREE.Mesh(
 
-const starsCount = 10000;
+new THREE.SphereGeometry(
+1.01,
+128,
+128
+),
 
-const starsVertices = [];
+new THREE.MeshPhongMaterial({
 
-for(let i=0;i<starsCount;i++){
+map:cloudTexture,
 
-    starsVertices.push(
-        (Math.random()-0.5)*1000,
-        (Math.random()-0.5)*1000,
-        (Math.random()-0.5)*1000
-    );
+transparent:true,
+
+opacity:.8,
+
+depthWrite:false
+
+})
+
+);
+
+scene.add(
+clouds
+);
+
+/////////////////////////////////////////////////////////
+// ATMOSPHERE
+/////////////////////////////////////////////////////////
+
+const atmosphere =
+new THREE.Mesh(
+
+new THREE.SphereGeometry(
+1.08,
+128,
+128
+),
+
+new THREE.ShaderMaterial({
+
+vertexShader:`
+
+varying vec3 vNormal;
+
+void main(){
+
+vNormal =
+normalize(
+normalMatrix * normal
+);
+
+gl_Position =
+projectionMatrix *
+modelViewMatrix *
+vec4(position,1.0);
+
 }
 
-starsGeometry.setAttribute(
-    'position',
-    new THREE.Float32BufferAttribute(
-        starsVertices,
-        3
-    )
+`,
+
+fragmentShader:`
+
+varying vec3 vNormal;
+
+void main(){
+
+float intensity =
+pow(
+0.7 -
+dot(
+vNormal,
+vec3(0,0,1)
+),
+3.0
+);
+
+gl_FragColor =
+vec4(
+0.2,
+0.5,
+1.0,
+1.0
+) * intensity;
+
+}
+
+`,
+
+blending:
+THREE.AdditiveBlending,
+
+side:
+THREE.BackSide,
+
+transparent:true
+
+})
+
+);
+
+scene.add(
+atmosphere
+);
+
+/////////////////////////////////////////////////////////
+// STARS
+/////////////////////////////////////////////////////////
+
+const starGeometry =
+new THREE.BufferGeometry();
+
+const starVertices = [];
+
+for(let i=0;i<20000;i++){
+
+starVertices.push(
+
+(Math.random()-0.5)*2000,
+
+(Math.random()-0.5)*2000,
+
+(Math.random()-0.5)*2000
+
+);
+
+}
+
+starGeometry.setAttribute(
+
+'position',
+
+new THREE.Float32BufferAttribute(
+starVertices,
+3
+)
+
 );
 
 const stars =
 new THREE.Points(
-    starsGeometry,
-    new THREE.PointsMaterial({
-        size: 0.7
-    })
+
+starGeometry,
+
+new THREE.PointsMaterial({
+
+size:1.2,
+
+color:0xffffff
+
+})
+
 );
 
-scene.add(stars);
+scene.add(
+stars
+);
 
-//////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
+// COUNTRY HELPERS
+/////////////////////////////////////////////////////////
+
+function latLonToVector3(
+lat,
+lon,
+radius=1.03
+){
+
+const phi =
+(90-lat)*Math.PI/180;
+
+const theta =
+(lon+180)*Math.PI/180;
+
+return new THREE.Vector3(
+
+-radius *
+Math.sin(phi) *
+Math.cos(theta),
+
+radius *
+Math.cos(phi),
+
+radius *
+Math.sin(phi) *
+Math.sin(theta)
+
+);
+
+}
+
+/////////////////////////////////////////////////////////
+// COUNTRIES
+/////////////////////////////////////////////////////////
+
+const countries = [
+
+{
+name:"Saudi Arabia",
+lat:24,
+lon:45,
+population:"37 Million",
+area:"2.15 Million km²"
+},
+
+{
+name:"China",
+lat:35,
+lon:103,
+population:"1.41 Billion",
+area:"9.59 Million km²"
+},
+
+{
+name:"Russia",
+lat:60,
+lon:90,
+population:"144 Million",
+area:"17.1 Million km²"
+},
+
+{
+name:"United States",
+lat:39,
+lon:-98,
+population:"339 Million",
+area:"9.83 Million km²"
+}
+
+];
+
+const markers = [];
+
+countries.forEach(country=>{
+
+const pos =
+latLonToVector3(
+country.lat,
+country.lon
+);
+
+const marker =
+new THREE.Mesh(
+
+new THREE.SphereGeometry(
+0.045,
+16,
+16
+),
+
+new THREE.MeshBasicMaterial({
+
+color:0xffff00,
+
+transparent:true,
+
+opacity:.35
+
+})
+
+);
+
+marker.position.copy(
+pos
+);
+
+marker.userData = country;
+
+scene.add(
+marker
+);
+
+const ring =
+new THREE.Mesh(
+
+new THREE.RingGeometry(
+0.05,
+0.08,
+32
+),
+
+new THREE.MeshBasicMaterial({
+
+color:0xffff00,
+
+transparent:true,
+
+opacity:.7,
+
+side:
+THREE.DoubleSide
+
+})
+
+);
+
+ring.position.copy(
+pos
+);
+
+ring.lookAt(
+new THREE.Vector3(
+0,
+0,
+0
+)
+);
+
+scene.add(
+ring
+);
+
+marker.userData.ring =
+ring;
+
+markers.push(
+marker
+);
+
+});
+
+/////////////////////////////////////////////////////////
+// INTERACTION
+/////////////////////////////////////////////////////////
+
+const popup =
+document.getElementById(
+'popup'
+);
+
+const raycaster =
+new THREE.Raycaster();
+
+const mouse =
+new THREE.Vector2();
+
+let hovered = null;
+
+let mouseX = 0;
+let mouseY = 0;
+
+window.addEventListener(
+'mousemove',
+e=>{
+
+mouseX=e.clientX;
+mouseY=e.clientY;
+
+mouse.x=
+(e.clientX/window.innerWidth)*2-1;
+
+mouse.y=
+-(e.clientY/window.innerHeight)*2+1;
+
+}
+);
+
+window.addEventListener(
+'touchmove',
+e=>{
+
+if(e.touches.length){
+
+mouseX=e.touches[0].clientX;
+mouseY=e.touches[0].clientY;
+
+mouse.x=
+(mouseX/window.innerWidth)*2-1;
+
+mouse.y=
+-(mouseY/window.innerHeight)*2+1;
+
+}
+
+},
+{passive:true}
+);
+
+let zoomTarget = null;
+
+window.addEventListener(
+'click',
+()=>{
+
+if(!hovered) return;
+
+zoomTarget =
+hovered.position
+.clone()
+.multiplyScalar(2.2);
+
+}
+);
+
+/////////////////////////////////////////////////////////
 // ANIMATION
-//////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 
 function animate(){
 
-    requestAnimationFrame(
-        animate
-    );
+requestAnimationFrame(
+animate
+);
 
-    earth.rotation.y += 0.0008;
+earth.rotation.y += 0.0007;
 
-    cloudSphere.rotation.y += 0.001;
+clouds.rotation.y += 0.001;
 
-    controls.update();
+raycaster.setFromCamera(
+mouse,
+camera
+);
 
-    renderer.render(
-        scene,
-        camera
-    );
+const hits =
+raycaster.intersectObjects(
+markers
+);
+
+markers.forEach(m=>{
+
+m.material.color.set(
+0xffff00
+);
+
+m.userData.ring.material.color.set(
+0xffff00
+);
+
+});
+
+if(hits.length){
+
+hovered =
+hits[0].object;
+
+hovered.material.color.set(
+0xff0000
+);
+
+hovered.userData.ring.material.color.set(
+0xff0000
+);
+
+const d =
+hovered.userData;
+
+popup.style.display='block';
+
+popup.style.left =
+(mouseX+15)+'px';
+
+popup.style.top =
+(mouseY+15)+'px';
+
+popup.innerHTML =
+
+'<b>'+d.name+'</b><br>' +
+'Population: '+d.population+'<br>' +
+'Area: '+d.area;
+
+}else{
+
+hovered = null;
+
+popup.style.display='none';
+
+}
+
+if(zoomTarget){
+
+camera.position.lerp(
+zoomTarget,
+0.03
+);
+
+if(
+camera.position.distanceTo(
+zoomTarget
+)<0.01
+){
+
+zoomTarget = null;
+
+}
+
+}
+
+controls.update();
+
+renderer.render(
+scene,
+camera
+);
+
 }
 
 animate();
 
-//////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 // RESIZE
-//////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////
 
 window.addEventListener(
-    'resize',
-    ()=>{
+'resize',
+()=>{
 
-        camera.aspect =
-        window.innerWidth /
-        window.innerHeight;
+camera.aspect =
+window.innerWidth/
+window.innerHeight;
 
-        camera.updateProjectionMatrix();
+camera.updateProjectionMatrix();
 
-        renderer.setSize(
-            window.innerWidth,
-            window.innerHeight
-        );
-    }
+renderer.setSize(
+window.innerWidth,
+window.innerHeight
+);
+
+}
 );
 
 </script>
